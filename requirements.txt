@@ -1,0 +1,3 @@
+spacy-nightly==2.0.0a
+numpy
+tensorflow
