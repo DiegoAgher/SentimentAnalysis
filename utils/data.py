@@ -4,8 +4,8 @@ import pandas as pd
 
 def get_IMDB_data():
 
-    train_data = _get_train_data()
-    test_data = _get_test_data()
+    train_data = get_train_data()
+    test_data = get_test_data()
 
 
 def get_train_data():
