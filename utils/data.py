@@ -3,9 +3,10 @@ import pandas as pd
 
 
 def get_IMDB_data():
-
     train_data = get_train_data()
     test_data = get_test_data()
+    
+    return train_data, test_data
 
 
 def get_train_data():
