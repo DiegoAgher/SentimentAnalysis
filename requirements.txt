@@ -1,3 +1,4 @@
-spacy-nightly==2.0.0a
 numpy
+pandas
+spacy-nightly==2.0.0a
 tensorflow
