@@ -7,12 +7,14 @@ en_nlp = spacy.util.get_lang_class('en')()
 COMA_TOKEN = en_nlp(',')[0].lower
 NUMBER_TOKEN = en_nlp('0')[0].lower
 
+
 def try_to_number(string):
     try:
         float(string)
         return True
     except:
         return False
+
 
 def get_clean_token_and_hash(token):
     token_hash = token.lower
@@ -27,6 +29,7 @@ def get_clean_token_and_hash(token):
         token_string = ','
     
     return token_string, token_hash
+
 
 def build_hashed_documents(list_of_documents):
     english_id_sequences = {}
@@ -47,8 +50,10 @@ def build_hashed_documents(list_of_documents):
         english_id_sequences[sent_id] = current_hash_sequence
     return english_id_sequences, sentence_exceptions_ids
 
-def get_string_or_unknown_from_hash(hash_):
+
+def get_string_or_unknown_from_hash(hash_, en_oov_indicator):
     return en_nlp.vocab.strings.get(hash_, en_oov_indicator)
+
 
 def read_vocabulary_vectors(vectors_path):
     with open(vectors_path) as glove_file:
@@ -62,7 +67,8 @@ def read_vocabulary_vectors(vectors_path):
         glove_file.seek(0)
     
         hash_embedding_map = {}
-        embedding_matrix = np.ndarray((num_vectors + 4, dims), dtype=np.float32)
+        embedding_matrix = np.ndarray((num_vectors + 4, dims),
+                                      dtype=np.float32)
     
         for i, line in enumerate(glove_file):
             word, *vector_elements = line.split()
@@ -71,21 +77,25 @@ def read_vocabulary_vectors(vectors_path):
             hash_ = spacy.strings.hash_string(word)
             hash_embedding_map[hash_] = i
         
-        ## Inverse vocabulary
+        # Inverse vocabulary
         embedding_hash_map = {v: k for k,v in hash_embedding_map.items()}
         
-        ## Adding vector for oov/unknown token
+        # Adding vector for oov/unknown token
         last_word_id = num_vectors - 1
-        embedding_matrix[last_word_id + 1, :] = np.random.random(size=(1, dims))
+        embedding_matrix[last_word_id + 1, :] = np.random.random(size=(1,
+                                                                       dims))
         
-        ## Adding vector for bos
-        embedding_matrix[last_word_id + 2, :] = np.random.random(size=(1,dims))
+        # Adding vector for bos
+        embedding_matrix[last_word_id + 2, :] = np.random.random(size=(1,
+                                                                       dims))
         
-        ## Adding vector for eos
-        embedding_matrix[last_word_id + 3, :] = np.random.random(size=(1,dims))
+        # Adding vector for eos
+        embedding_matrix[last_word_id + 3, :] = np.random.random(size=(1,
+                                                                       dims))
         
-        ## Adding vector for padd
-        embedding_matrix[last_word_id + 4, :] = np.random.random(size=(1,dims))
+        # Adding vector for padd
+        embedding_matrix[last_word_id + 4, :] = np.random.random(size=(1,
+                                                                       dims))
         
     return embedding_matrix, hash_embedding_map, embedding_hash_map
 
@@ -93,6 +103,7 @@ def read_vocabulary_vectors(vectors_path):
 def get_vector_id_from_hash(_hash, hash_vector_map):
     en_oov_indicator = len(hash_vector_map)
     return hash_vector_map.get(_hash, en_oov_indicator)
+
 
 def get_string_from_hash(hash_, hash_vector_map):
     en_oov_indicator = len(hash_vector_map)
@@ -113,10 +124,11 @@ def get_string_from_hash(hash_, hash_vector_map):
         return "PAD"
 
 
-def get_hash_from_id(embedding_id):
+def get_hash_from_id(embedding_id, vector_hash_map):
     if embedding_id in vector_hash_map:
         return vector_hash_map[embedding_id]
     return embedding_id
+
 
 def embed_subsequence_right(sequence, subsequence):
     """
@@ -149,7 +161,8 @@ class bucket_generator:
         self.create_bucket_matrices(pad)
 
         self.bucket_keys = list(self.buckets.keys())
-        self.bucket_probs = [self.buckets[key]['size']/self.num_samples for key in self.bucket_keys]
+        self.bucket_probs = [self.buckets[key]['size']/self.num_samples
+                             for key in self.bucket_keys]
 
         for bucket_key in self.bucket_keys:
             self.shuffle(bucket_key)
@@ -180,7 +193,8 @@ class bucket_generator:
         bucket_matrices = {}
         for bucket_length in self.buckets.keys():
             bucket_elements = len(self.buckets[bucket_length])
-            matrix = np.ndarray((bucket_elements, self.num_sequences, bucket_length), dtype=np.int32)
+            matrix = np.ndarray((bucket_elements, self.num_sequences,
+                                 bucket_length), dtype=np.int32)
             if self.have_labels:
                 labels = np.ndarray((bucket_elements), dtype=np.int32)
             for i, sequences in enumerate(self.buckets[bucket_length]):
@@ -200,7 +214,8 @@ class bucket_generator:
         self.buckets = bucket_matrices
 
     def shuffle(self, bucket_length):
-        permutation = np.random.permutation(self.buckets[bucket_length]['size'])
+        permutation = np.random.permutation(self.buckets[bucket_length]
+                                            ['size'])
         matrix = self.buckets[bucket_length]['matrix']
         shuffled_matrix = np.empty(matrix.shape, dtype=matrix.dtype)
         if self.have_labels:
@@ -236,4 +251,3 @@ class bucket_generator:
 
     def __iter__(self):
         return self
-
