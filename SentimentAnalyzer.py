@@ -20,7 +20,7 @@ class SentimentAnalyzer(object):
         mapped_text_dict, _ = build_embedding_ids_sequences(text)
         embedding_sequence = mapped_text_dict[0]
         mapped_text = np.reshape(embedding_sequence,
-                                 (1,len(embedding_sequence)))
+                                 (1, len(embedding_sequence)))
         inference_dict = {
             self.graph_elements['input_sequence']: mapped_text
                          }
@@ -31,9 +31,9 @@ class SentimentAnalyzer(object):
             probabilities = sess.run(self.graph_elements['predictions'],
                                      inference_dict)
             prediction = np.argmax(probabilities)
-            feeling_prob = probabilities[0, prediction]
+            feeling_prob = probabilities[0][prediction]
             print("probabilities: ", probabilities)
-            feeling = 'positive' if prediction == 0 else 'negative'
+            feeling = 'positive' if prediction == 1 else 'negative'
             print("""The text {0} has a {1} feeling with probability {2}""".
                   format(text, feeling, feeling_prob))
 
