@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
 from utils.data import get_IMDB_data
-from utils.nlp import build_hashed_documents
-from utils.nlp import read_vocabulary_vectors, get_vector_id_from_hash
 from utils.nlp import bucket_generator
+from utils.training import build_embedding_ids_sequences, embedding_matrix,\
+    hash_vector_map
 from utils.tf_graphs import sequence2class_lstm_train_graph
 
 
@@ -17,29 +17,29 @@ def build_one_hot_encoding_target_variable(dataframe):
 
 train_data, test_data = get_IMDB_data()
 
-hashed_sentences, exceptioned_docs =\
-    build_hashed_documents(train_data['text'].values)
+train_embedding_sequences, exceptioned_sequences =\
+    build_embedding_ids_sequences(train_data['text'].values)
 
-embedding_matrix, hash_vector_map, vector_hash_map =\
-    read_vocabulary_vectors('/data/glove/glove.6B.300d.txt')
+test_embedding_sequences, test_exceptioned_sequences =\
+    build_embedding_ids_sequences(test_data['text'].values)
+
 
 en_oov_indicator = len(hash_vector_map)
 en_bos_indicator = en_oov_indicator + 1
 en_eos_indicator = en_bos_indicator + 1
 en_pad_indicator = en_eos_indicator + 1
 
-hash_id_sequences = {sent_id:
-                     [get_vector_id_from_hash(x, hash_vector_map)
-                      for x in sentence]
-                     for sent_id, sentence in hashed_sentences.items()
-                     }
 
 y_seq = build_one_hot_encoding_target_variable(train_data)
 
 batch_size = 32
-my_generator = bucket_generator(list(hash_id_sequences.values()),
-                                y_seq, samples_threshold=100,
-                                batch_size=batch_size, pad=en_pad_indicator)
+train_generator = bucket_generator(list(train_embedding_sequences.values()),
+                                   y_seq, samples_threshold=100,
+                                   batch_size=batch_size, pad=en_pad_indicator)
+
+test_generator = bucket_generator(list(test_embedding_sequences.values()),
+                                  y_seq, samples_threshold=100,
+                                  batch_size=batch_size, pad=en_pad_indicator)
 
 num_classes = 2
 g = sequence2class_lstm_train_graph(batch_size=batch_size,
@@ -52,12 +52,18 @@ saver = tf.train.Saver()
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
-max_iterations = 3000
+num_epochs = 2
+max_iterations = train_data.shape[0] / (num_epochs - 0.5)
 training_state = None
 training_loss = 0
 accuracy_t = 0
 
-for i, (seq_length, batch) in enumerate(my_generator):
+inference_dict = {
+    g['input_dropout_probability']: 1,
+    g['output_dropout_probability']: 1,
+                 }
+
+for i, (seq_length, batch) in enumerate(train_generator):
     x, y = batch[:, 0, :], batch[:, 1, -num_classes:]
     x = np.reshape(x, (batch_size, seq_length))
     y = np.reshape(y, (batch_size, num_classes))
@@ -76,8 +82,18 @@ for i, (seq_length, batch) in enumerate(my_generator):
     training_loss += training_loss_
     accuracy_t += accuracy_
     if i % 20 == 0:
-        print("Average training loss for example", i, ":", training_loss / 20)
-        print("Average training loss for example", i, ":", accuracy_t / 20)
+        _, test_batch = next(test_generator)
+        x_test, y_test = test_batch[:, 0, :], test_batch[:, 1, -num_classes:]
+        inference_dict[g['input_sequence']] = x_test
+        inference_dict[g['labels']] = y_test
+
+        test_accuracy, test_loss = sess.run([g['accuracy'], g['total_loss']])
+        print("Train Metrics")
+        print("Average loss", i, ":", training_loss / 20)
+        print("Average accuracy ", i, ":", accuracy_t / 20)
+        print("Test Metrics")
+        print("Average loss", i, ":", test_loss / 20)
+        print("Average accuracy ", i, ":", test_accuracy/ 20)
         print("=====")
 
         training_loss = 0
