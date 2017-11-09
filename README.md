@@ -17,4 +17,7 @@ Run from you terminal the following commands
 
 `wget http://ai.stanford.edu/~amaas/data/sentiment/; unzip aclImdb.zip`
 
-`wget http://nlp.stanford.edu/data/glove.6B.zip; unzip glove.6B.zip` 
+`wget http://nlp.stanford.edu/data/glove.6B.zip; unzip glove.6B.zip`
+
+### Training the model
+After installing the module dependencies, run `python train_rnn.py` 
