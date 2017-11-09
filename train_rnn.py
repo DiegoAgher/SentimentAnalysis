@@ -78,7 +78,7 @@ for i, (seq_length, batch) in enumerate(train_generator):
                                                              g['train_step'],
                                                              g['final_state'],
                                                              g['accuracy']],
-                                                            feed_dict)
+                                                             feed_dict)
     training_loss += training_loss_
     accuracy_t += accuracy_
     if i % 20 == 0:
@@ -87,13 +87,15 @@ for i, (seq_length, batch) in enumerate(train_generator):
         inference_dict[g['input_sequence']] = x_test
         inference_dict[g['labels']] = y_test
 
-        test_accuracy, test_loss = sess.run([g['accuracy'], g['total_loss']])
+        test_accuracy, test_loss = sess.run([g['accuracy'],
+                                             g['total_loss']],
+                                             inference_dict)
         print("Train Metrics")
         print("Average loss", i, ":", training_loss / 20)
         print("Average accuracy ", i, ":", accuracy_t / 20)
         print("Test Metrics")
-        print("Average loss", i, ":", test_loss / 20)
-        print("Average accuracy ", i, ":", test_accuracy/ 20)
+        print("Average loss", i, ":", test_loss)
+        print("Average accuracy ", i, ":", test_accuracy)
         print("=====")
 
         training_loss = 0
